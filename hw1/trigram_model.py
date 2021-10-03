@@ -37,14 +37,14 @@ def get_ngrams(sequence, n):
     """
 
     # add START, END and sequence length
-    length = len(sequence)
+
     sequence.insert(0, 'START')
-    sequence.insert(length, 'END')
-    length += 2
+    sequence.insert(len(sequence), 'END')
 
     # get n-grams
     list_ngrams = []
-    for i in range(len - n + 1):
+    length = len(sequence)
+    for i in range(length - n + 1):
         gram = tuple()
         for k in range(n):
             gram += (sequence[i + k],)
