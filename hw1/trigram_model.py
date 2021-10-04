@@ -114,11 +114,11 @@ class TrigramModel(object):
         Returns the raw (unsmoothed) trigram probability
         """
         trigram_count = self.trigramcounts[trigram]
-        bigram = (trigram[0], trigram[1])
+        bigram = trigram[0:2]
         if bigram == ('START', 'START'):
             bigram_count = self.sentencecount
         else:
-            bigram_count = self.bigramcounts[(trigram[0], trigram[1])]
+            bigram_count = self.bigramcounts[bigram]
         return trigram_count / bigram_count
 
 
@@ -128,7 +128,7 @@ class TrigramModel(object):
         Returns the raw (unsmoothed) bigram probability
         """
         bigram_count = self.bigramcounts[bigram]
-        unigram_count = self.unigramcounts[(bigram[0])]
+        unigram_count = self.unigramcounts[bigram[0:1]]
         return bigram_count / unigram_count
 
 
@@ -142,8 +142,8 @@ class TrigramModel(object):
         # can be slow! You might want to compute the total number of words once, 
         # store in the TrigramModel instance, and then re-use it.
 
-        unigram_count = self.unigramcounts(unigram)
-        return unigram_count/self.wordcounts
+        unigram_count = self.unigramcounts[unigram]
+        return unigram_count/self.wordcount
 
 
     def generate_sentence(self,t=20):
@@ -182,29 +182,43 @@ class TrigramModel(object):
         COMPLETE THIS METHOD (PART 4)
         Returns the smoothed trigram probability (using linear interpolation). 
         """
-        # for a trigram (u, v, w)
-        # q(w|u, v) = λ1 × qML(w|u, v) + λ2 × qML(w|v) + λ3 × qML(w)
+        # for a trigram (u, v, w), q(w|u, v) = λ1 × qML(w|u, v) + λ2 × qML(w|v) + λ3 × qML(w)
         lambda1 = 1/3.0
         lambda2 = 1/3.0
         lambda3 = 1/3.0
-        p = lambda1 * self.raw_trigram_probability(trigram) + \
-            lambda2 * self.raw_bigram_probability(trigram[1:]) + \
-            lambda3 * self.raw_unigram_probability(trigram[2:])
-        return p
+        p1 = lambda1 * self.raw_trigram_probability(trigram)
+        p2 = lambda2 * self.raw_bigram_probability(trigram[1:])
+        p3 = lambda3 * self.raw_unigram_probability((trigram[2],))
+        return p1 + p2 + p3
         
     def sentence_logprob(self, sentence):
         """
         COMPLETE THIS METHOD (PART 5)
         Returns the log probability of an entire sequence.
         """
-        return float("-inf")
+        list_trigrams = get_ngrams(sentence, 3)
+        p_sentence = 0
+        for trigram in list_trigrams:
+            p_trigram = self.smoothed_trigram_probability(trigram)
+            p_sentence += math.log2(p_trigram)
+
+        return p_sentence
 
     def perplexity(self, corpus):
         """
         COMPLETE THIS METHOD (PART 6) 
         Returns the log probability of an entire sequence.
         """
-        return float("inf") 
+        sum = 0
+        M = 0
+        for sentence in corpus:
+            sum += self.sentence_logprob(sentence)
+            M += len(sentence)
+
+        l = sum/M
+        perplexity = math.pow(2, -l)
+
+        return perplexity
 
 
 def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2):
@@ -228,7 +242,6 @@ def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2)
 if __name__ == "__main__":
 
     model = TrigramModel(sys.argv[1])
-    print(model.generate_sentence())
 
     # put test code here...
     # or run the script from the command line with 
@@ -240,9 +253,9 @@ if __name__ == "__main__":
 
     
     # Testing perplexity: 
-    # dev_corpus = corpus_reader(sys.argv[2], model.lexicon)
-    # pp = model.perplexity(dev_corpus)
-    # print(pp)
+    dev_corpus = corpus_reader(sys.argv[2], model.lexicon)
+    pp = model.perplexity(dev_corpus)
+    print(pp)
 
 
     # Essay scoring experiment: 
