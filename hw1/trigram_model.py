@@ -28,19 +28,12 @@ def get_lexicon(corpus):
     return set(word for word in word_counts if word_counts[word] > 1)  
 
 
-
 def get_ngrams(sequence, n):
     """
     COMPLETE THIS FUNCTION (PART 1)
     Given a sequence, this function should return a list of n-grams, where each n-gram is a Python tuple.
     This should work for arbitrary values of 1 <= n < len(sequence).
     """
-
-    # add START, END and sequence length
-
-    sequence.insert(0, 'START')
-    sequence.insert(len(sequence), 'END')
-
     # get n-grams
     list_ngrams = []
     length = len(sequence)
@@ -58,14 +51,14 @@ class TrigramModel(object):
     def __init__(self, corpusfile):
     
         # Iterate through the corpus once to build a lexicon 
-        generator = corpus_reader(corpusfile)
-        self.lexicon = get_lexicon(generator)
+        generator = corpus_reader(corpusfile)   #
+        self.lexicon = get_lexicon(generator)  # SET of words that appear in txt more than once
         self.lexicon.add("UNK")
         self.lexicon.add("START")
         self.lexicon.add("STOP")
     
         # Now iterate through the corpus again and count ngrams
-        generator = corpus_reader(corpusfile, self.lexicon)
+        generator = corpus_reader(corpusfile, self.lexicon)  # less frequent words are replaced by UNK.
         self.count_ngrams(generator)
 
 
@@ -78,11 +71,31 @@ class TrigramModel(object):
    
         self.unigramcounts = {} # might want to use defaultdict or Counter instead
         self.bigramcounts = {} 
-        self.trigramcounts = {} 
+        self.trigramcounts = {}
 
         ##Your code here
+        for sentence in corpus:
+            list_unigrams = get_ngrams(sentence, 1)
+            for unigram in list_unigrams:
+                if unigram not in self.unigramcounts:
+                    self.unigramcounts[unigram] = 1
+                else:
+                    self.unigramcounts[unigram] += 1
 
-        return
+            list_bigrams = get_ngrams(sentence, 2)
+            for bigram in list_bigrams:
+                if bigram not in self.bigramcounts:
+                    self.bigramcounts[bigram] = 1
+                else:
+                    self.bigramcounts[bigram] += 1
+
+            list_trigrams = get_ngrams(sentence, 3)
+            for trigram in list_trigrams:
+                if trigram not in self.trigramcounts:
+                    self.trigramcounts[trigram] = 1
+                else:
+                    self.trigramcounts[trigram] += 1
+
 
     def raw_trigram_probability(self,trigram):
         """
