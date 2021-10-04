@@ -182,10 +182,15 @@ class TrigramModel(object):
         COMPLETE THIS METHOD (PART 4)
         Returns the smoothed trigram probability (using linear interpolation). 
         """
+        # for a trigram (u, v, w)
+        # q(w|u, v) = λ1 × qML(w|u, v) + λ2 × qML(w|v) + λ3 × qML(w)
         lambda1 = 1/3.0
         lambda2 = 1/3.0
         lambda3 = 1/3.0
-        return 0.0
+        p = lambda1 * self.raw_trigram_probability(trigram) + \
+            lambda2 * self.raw_bigram_probability(trigram[1:]) + \
+            lambda3 * self.raw_unigram_probability(trigram[2:])
+        return p
         
     def sentence_logprob(self, sentence):
         """
