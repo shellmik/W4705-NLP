@@ -34,13 +34,19 @@ def get_ngrams(sequence, n):
     Given a sequence, this function should return a list of n-grams, where each n-gram is a Python tuple.
     This should work for arbitrary values of 1 <= n < len(sequence).
     """
-    # get n-grams
+    # add START, END and sequence length (not sure)
+    sequence_copy = sequence.copy()
+    sequence_copy.insert(0, 'START')
+    sequence_copy.insert(len(sequence_copy), 'STOP')
+    for i in range(0, n-2):
+        sequence_copy.insert(0, 'START')
+
     list_ngrams = []
-    length = len(sequence)
+    length = len(sequence_copy)
     for i in range(length - n + 1):
         gram = tuple()
         for k in range(n):
-            gram += (sequence[i + k],)
+            gram += (sequence_copy[i + k],)
         list_ngrams.append(gram)
 
     return list_ngrams
@@ -72,6 +78,8 @@ class TrigramModel(object):
         self.unigramcounts = {} # might want to use defaultdict or Counter instead
         self.bigramcounts = {} 
         self.trigramcounts = {}
+        self.wordcount = 0
+        self.sentencecount = 0
 
         ##Your code here
         for sentence in corpus:
@@ -96,21 +104,34 @@ class TrigramModel(object):
                 else:
                     self.trigramcounts[trigram] += 1
 
+            self.wordcount += len(sentence)
+            self.sentencecount += 1
+
 
     def raw_trigram_probability(self,trigram):
         """
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) trigram probability
         """
-        return 0.0
+        trigram_count = self.trigramcounts[trigram]
+        bigram = (trigram[0], trigram[1])
+        if bigram == ('START', 'START'):
+            bigram_count = self.sentencecount
+        else:
+            bigram_count = self.bigramcounts[(trigram[0], trigram[1])]
+        return trigram_count / bigram_count
+
 
     def raw_bigram_probability(self, bigram):
         """
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) bigram probability
         """
-        return 0.0
-    
+        bigram_count = self.bigramcounts[bigram]
+        unigram_count = self.unigramcounts[(bigram[0])]
+        return bigram_count / unigram_count
+
+
     def raw_unigram_probability(self, unigram):
         """
         COMPLETE THIS METHOD (PART 3)
@@ -119,16 +140,42 @@ class TrigramModel(object):
 
         #hint: recomputing the denominator every time the method is called
         # can be slow! You might want to compute the total number of words once, 
-        # store in the TrigramModel instance, and then re-use it.  
-        return 0.0
+        # store in the TrigramModel instance, and then re-use it.
 
-    def generate_sentence(self,t=20): 
+        unigram_count = self.unigramcounts(unigram)
+        return unigram_count/self.wordcounts
+
+
+    def generate_sentence(self,t=20):
         """
         COMPLETE THIS METHOD (OPTIONAL)
         Generate a random sentence from the trigram model. t specifies the
         max length, but the sentence may be shorter if STOP is reached.
         """
-        return result            
+        result = ["START", "START"]
+        for i in range(0, t - 1):
+            bigram = (result[-2], result[-1])
+            dict_possible = {}
+            for trigram in self.trigramcounts:
+                if (trigram[0], trigram[1]) == bigram:
+                    dict_possible[trigram[2]] = self.raw_trigram_probability(trigram)
+
+            keys = [k for k in dict_possible.keys()]
+            values = [int(v * 1000000) for v in dict_possible.values()]
+            chosen = random.choices(keys, weights=values, k=1)[0]
+            result.append(chosen)
+
+            if chosen == "STOP":
+                break
+
+        # processing START and STOP as required
+        if result[-1] != "STOP":
+            result.append("STOP")
+        result.pop(0)
+        result.pop(0)
+
+        return result
+
 
     def smoothed_trigram_probability(self, trigram):
         """
@@ -175,7 +222,8 @@ def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2)
 
 if __name__ == "__main__":
 
-    model = TrigramModel(sys.argv[1]) 
+    model = TrigramModel(sys.argv[1])
+    print(model.generate_sentence())
 
     # put test code here...
     # or run the script from the command line with 
