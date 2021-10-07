@@ -74,6 +74,16 @@ class TrigramModel(object):
         generator = corpus_reader(corpusfile, self.lexicon)  # less frequent words are replaced by UNK.
         self.count_ngrams(generator)
 
+        generator = corpus_reader(corpusfile, self.lexicon)
+        self.count_vocabulary(generator)
+
+    def count_vocabulary(self, corpus):
+        self.wordcounts = 0
+        self.sentencecounts = 0
+        for sentence in corpus:
+            self.wordcounts += len(sentence) + 2
+            self.sentencecounts = 1
+
     def count_ngrams(self, corpus):
         """
         COMPLETE THIS METHOD (PART 2)
@@ -114,16 +124,16 @@ class TrigramModel(object):
         """
         # calculate trigram count
         if trigram not in self.trigramcounts:
-            return  1 / WORD_COUNT
+            return 1 / self.wordcounts
 
         trigram_count = self.trigramcounts[trigram]
         bigram = trigram[0:2]
         if bigram == ('START', 'START'):
-            bigram_count = SENTENCE_COUNT
+            bigram_count = self.sentencecounts
         else:
             bigram_count = self.bigramcounts[bigram]
 
-        return trigram_count/bigram_count
+        return trigram_count / bigram_count
 
         # calculate bigram count
         # trigram_count = self.trigramcounts[trigram]
@@ -141,7 +151,7 @@ class TrigramModel(object):
         """
         # calculate bigram count
         if bigram not in self.bigramcounts:
-            return 1 / WORD_COUNT
+            return 1 / self.wordcounts
 
         # calculate unigram count
         bigram_count = self.bigramcounts[bigram]
@@ -165,11 +175,12 @@ class TrigramModel(object):
         # can be slow! You might want to compute the total number of words once, 
         # store in the TrigramModel instance, and then re-use it.
 
+        # V = self.wordcounts + self.sentencecounts * 2
         if unigram not in self.unigramcounts:
-            return  1 / WORD_COUNT
+            return self.wordcounts
         else:
             unigram_count = self.unigramcounts[unigram]
-            return unigram_count / WORD_COUNT
+            return unigram_count / self.wordcounts
 
     def generate_sentence(self, t=20):
         """
