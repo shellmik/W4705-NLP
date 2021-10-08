@@ -4,14 +4,16 @@ import math
 import random
 import os
 import os.path
+import itertools
 """
 COMS W4705 - Natural Language Processing
 Homework 1 - Programming Component: Trigram Language Models
 Yassine Benajiba
 """
-
-WORD_COUNT = 0
-SENTENCE_COUNT = 0
+"""
+This is the homework for Michelle Wu (qw2324)
+W4705 Fall 2021
+"""
 
 def corpus_reader(corpusfile, lexicon=None): 
     with open(corpusfile,'r') as corpus: 
@@ -42,8 +44,8 @@ def get_ngrams(sequence, n):
     # for n-grams (n>2), there is n-1 total number of "START"
     # to establish conditional probability for the first token.
     sequence_copy = sequence.copy()
-    sequence_copy.insert(0, 'START')
     sequence_copy.insert(len(sequence_copy), 'STOP')
+    sequence_copy.insert(0, 'START')
     for i in range(0, n-2):
         sequence_copy.insert(0, 'START')
 
@@ -82,7 +84,7 @@ class TrigramModel(object):
         self.sentencecounts = 0
         for sentence in corpus:
             self.wordcounts += len(sentence) + 2
-            self.sentencecounts = 1
+            self.sentencecounts += 1
 
     def count_ngrams(self, corpus):
         """
@@ -122,11 +124,12 @@ class TrigramModel(object):
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) trigram probability
         """
-        # calculate trigram count
+        # calculate trigram
         if trigram not in self.trigramcounts:
             return 1 / self.wordcounts
-
         trigram_count = self.trigramcounts[trigram]
+
+        # calculate bigram
         bigram = trigram[0:2]
         if bigram == ('START', 'START'):
             bigram_count = self.sentencecounts
@@ -135,35 +138,21 @@ class TrigramModel(object):
 
         return trigram_count / bigram_count
 
-        # calculate bigram count
-        # trigram_count = self.trigramcounts[trigram]
-        # bigram = trigram[0:2]
-        # if bigram == ('START', 'START'):
-        #     bigram_count = self.sentencecount
-        # else:
-        #     bigram_count = self.bigramcounts[bigram]
-        #  return trigram_count / bigram_count
-
     def raw_bigram_probability(self, bigram):
         """
         COMPLETE THIS METHOD (PART 3)
         Returns the raw (unsmoothed) bigram probability
         """
-        # calculate bigram count
+        # calculate bigram
         if bigram not in self.bigramcounts:
             return 1 / self.wordcounts
-
-        # calculate unigram count
         bigram_count = self.bigramcounts[bigram]
+
+        # calculate unigram
         unigram = bigram[0:1]
         unigram_count = self.unigramcounts[unigram]
 
         return bigram_count / unigram_count
-
-        # calculate bigram & unigram count
-        # unigram_count = self.unigramcounts[bigram[0:1]]
-        # return bigram_count / len(self.bigramcounts)
-
 
     def raw_unigram_probability(self, unigram):
         """
@@ -175,9 +164,8 @@ class TrigramModel(object):
         # can be slow! You might want to compute the total number of words once, 
         # store in the TrigramModel instance, and then re-use it.
 
-        # V = self.wordcounts + self.sentencecounts * 2
         if unigram not in self.unigramcounts:
-            return self.wordcounts
+            return 1 / self.wordcounts
         else:
             unigram_count = self.unigramcounts[unigram]
             return unigram_count / self.wordcounts
@@ -232,7 +220,7 @@ class TrigramModel(object):
         Returns the log probability of an entire sequence.
         """
         list_trigrams = get_ngrams(sentence, 3)
-        logprob = 0
+        logprob = 0.0
         for trigram in list_trigrams:
             p_trigram = self.smoothed_trigram_probability(trigram)
             logprob += math.log2(p_trigram)
@@ -244,12 +232,17 @@ class TrigramModel(object):
         COMPLETE THIS METHOD (PART 6) 
         Returns the log probability of an entire sequence.
         """
-        S = 0
+        corpus, corpus_copy = itertools.tee(corpus)
+
+        S = 0.0
         for sentence in corpus:
             S += self.sentence_logprob(sentence)
 
-        M = WORD_COUNT
-        l = (1/M) * S
+        M = 0.0
+        for sentence in corpus_copy:
+            M += len(sentence)
+
+        l = S/M
         perplexity = math.pow(2, -l)
 
         return perplexity
@@ -271,7 +264,7 @@ def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2)
             total += 1
 
         for f in os.listdir(testdir2):
-            pp_high  = model1.perplexity(corpus_reader(os.path.join(testdir2, f), model1.lexicon))
+            pp_high = model1.perplexity(corpus_reader(os.path.join(testdir2, f), model1.lexicon))
             pp_low = model2.perplexity(corpus_reader(os.path.join(testdir2, f), model2.lexicon))
             if pp_low <= pp_high:
                 correct += 1
@@ -291,19 +284,11 @@ if __name__ == "__main__":
     #
     # you can then call methods on the model instance in the interactive
     # Python prompt.
-
-    # Get total word count and sequence count.
-    cnt_corpus = corpus_reader(sys.argv[2], model.lexicon)
-    for sequence in cnt_corpus:
-        WORD_COUNT += len(sequence)
-        SENTENCE_COUNT += 1
-
     
     # Testing perplexity: 
     dev_corpus = corpus_reader(sys.argv[2], model.lexicon)
     pp = model.perplexity(dev_corpus)
     print(pp)
-
 
     # Essay scoring experiment: 
     acc = essay_scoring_experiment('./hw1_data/ets_toefl_data/train_high.txt',
