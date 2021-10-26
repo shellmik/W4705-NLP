@@ -133,13 +133,10 @@ class CkyParser(object):
         n = len(tokens)
         for i in range(0, n):
             items = self.grammar.rhs_to_rules[(tokens[i],)]
-            # table
             table[(i, i + 1)] = defaultdict(str)
-            for m in items:
-                table[(i, i + 1)][m[0]] = tokens[i]
-            # prob
             probs[(i, i + 1)] = defaultdict(float)
             for m in items:
+                table[(i, i + 1)][m[0]] = tokens[i]
                 probs[(i, i + 1)][m[0]] = math.log(m[2])
 
         for l in range(2, n + 1):
