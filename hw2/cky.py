@@ -146,15 +146,19 @@ class CkyParser(object):
             for i in range(0, n - l + 1):
                 # initialize table
                 j = i + l
-                table[(i, j)] = defaultdict(tuple)
-                probs[(i, j)] = defaultdict(float)
-
                 # iterate through k
                 for k in range(i + 1, j):
                     # TODO: Can we use itertools to simplify?
                     for p in list(table[(i, k)].keys()):
                         for q in list(table[(k, j)].keys()):
                             if (p, q) in list(self.grammar.rhs_to_rules.keys()):
+                                # initialize table
+                                if table[(i, j)] is None:
+                                    table[(i, j)] = defaultdict(tuple)
+                                if probs[(i, j)] is None:
+                                    probs[(i, j)] = defaultdict(float)
+
+                                # fill table
                                 items = self.grammar.rhs_to_rules[(p, q)]
                                 for m in items:
                                     tmpp = float(probs[(i, k)][p]) + float(probs[(k, j)][q]) + math.log(m[2])
@@ -170,18 +174,15 @@ def get_tree(chart, i,j,nt):
     Return the parse-tree rooted in non-terminal nt and covering span i,j.
     """
     # TODO: Part 4
-    if chart[i, j] is None:
-        return None
-
-    if i == j-1:
+    if i + 1 == j:
         return (nt, chart[i,j][nt])
 
-    parent = chart[(i,j)][nt]
-    c1 = parent[0]
-    c2 = parent[1]
+    c1 = chart[(i,j)][nt][0]
+    c2 = chart[(i,j)][nt][1]
+
     return (nt, get_tree(chart, c1[1], c1[2], c1[0]), get_tree(chart, c2[1], c2[2], c2[0]))
- 
-       
+
+
 if __name__ == "__main__":
     
     with open('atis3.pcfg','r') as grammar_file:
@@ -192,4 +193,3 @@ if __name__ == "__main__":
         table, probs = parser.parse_with_backpointers(toks)
         assert check_table_format(table)
         assert check_probs_format(probs)
-        print(get_tree(table, 0, len(toks), grammar.startsymbol))
