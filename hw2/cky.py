@@ -170,17 +170,26 @@ def get_tree(chart, i,j,nt):
     Return the parse-tree rooted in non-terminal nt and covering span i,j.
     """
     # TODO: Part 4
-    return None 
+    if chart[i, j] is None:
+        return None
+
+    if i == j-1:
+        return (nt, chart[i,j][nt])
+
+    parent = chart[(i,j)][nt]
+    c1 = parent[0]
+    c2 = parent[1]
+    return (nt, get_tree(chart, c1[1], c1[2], c1[0]), get_tree(chart, c2[1], c2[2], c2[0]))
  
        
 if __name__ == "__main__":
     
-    with open('test.pcfg','r') as grammar_file:
+    with open('atis3.pcfg','r') as grammar_file:
         grammar = Pcfg(grammar_file) 
         parser = CkyParser(grammar)
-        toks = "she saw the cat with glasses".split(" ") #['flights', 'from', 'miami', 'to', 'cleveland', '.']
+        toks = ['flights', 'from', 'miami', 'to', 'cleveland', '.']
         print(parser.is_in_language(toks))
         table, probs = parser.parse_with_backpointers(toks)
         assert check_table_format(table)
         assert check_probs_format(probs)
-        
+        print(get_tree(table, 0, len(toks), grammar.startsymbol))
