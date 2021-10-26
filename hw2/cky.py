@@ -98,21 +98,24 @@ class CkyParser(object):
         """
         # TODO, part 2
         n = len(tokens)
-        table = defaultdict(list)
+        table = defaultdict(set)
 
         for i in range(0, n):
             items = self.grammar.rhs_to_rules[(tokens[i],)]
-            table[(i, i + 1)].extend([m[0] for m in items])
+            for m in items:
+                table[(i, i + 1)].add(m[0])
 
         for l in range(2, n + 1):
             for i in range(0, n - l + 1):
                 j = i + l
                 for k in range(i + 1, j):
+                    # TODO: Can we use itertools to simplify?
                     for p in table[(i, k)]:
                         for q in table[(k, j)]:
                             if (p, q) in list(self.grammar.rhs_to_rules.keys()):
                                 items = self.grammar.rhs_to_rules[(p, q)]
-                                table[(i, j)].extend([m[0] for m in items])
+                                for m in items:
+                                    table[(i, j)].add(m[0])
 
         if self.grammar.startsymbol in table[(0, n)]:
             return True
@@ -124,8 +127,41 @@ class CkyParser(object):
         Parse the input tokens and return a parse table and a probability table.
         """
         # TODO, part 3
-        table= None
-        probs = None
+        table= defaultdict(dict)
+        probs = defaultdict(dict)
+
+        n = len(tokens)
+        for i in range(0, n):
+            items = self.grammar.rhs_to_rules[(tokens[i],)]
+            # table
+            table[(i, i + 1)] = defaultdict(str)
+            for m in items:
+                table[(i, i + 1)][m[0]] = tokens[i]
+            # prob
+            probs[(i, i + 1)] = defaultdict(float)
+            for m in items:
+                probs[(i, i + 1)][m[0]] = math.log(m[2])
+
+        for l in range(2, n + 1):
+            for i in range(0, n - l + 1):
+                # initialize table
+                j = i + l
+                table[(i, j)] = defaultdict(tuple)
+                probs[(i, j)] = defaultdict(float)
+
+                # iterate through k
+                for k in range(i + 1, j):
+                    # TODO: Can we use itertools to simplify?
+                    for p in list(table[(i, k)].keys()):
+                        for q in list(table[(k, j)].keys()):
+                            if (p, q) in list(self.grammar.rhs_to_rules.keys()):
+                                items = self.grammar.rhs_to_rules[(p, q)]
+                                for m in items:
+                                    tmpp = float(probs[(i, k)][p]) + float(probs[(k, j)][q]) + math.log(m[2])
+                                    if m[0] not in table[(i, j)] or tmpp > probs[(i, j)][m[0]]:
+                                        table[(i, j)][m[0]] = ((p, i, k), (q, k, j))
+                                        probs[(i, j)][m[0]] = tmpp
+
         return table, probs
 
 
@@ -139,12 +175,12 @@ def get_tree(chart, i,j,nt):
        
 if __name__ == "__main__":
     
-    with open('atis3.pcfg','r') as grammar_file:
+    with open('test.pcfg','r') as grammar_file:
         grammar = Pcfg(grammar_file) 
         parser = CkyParser(grammar)
-        toks = ['miami', 'flights','cleveland', 'from', 'to','.']
+        toks = "she saw the cat with glasses".split(" ") #['flights', 'from', 'miami', 'to', 'cleveland', '.']
         print(parser.is_in_language(toks))
-        #table,probs = parser.parse_with_backpointers(toks)
-        #assert check_table_format(chart)
-        #assert check_probs_format(probs)
+        table, probs = parser.parse_with_backpointers(toks)
+        assert check_table_format(table)
+        assert check_probs_format(probs)
         
