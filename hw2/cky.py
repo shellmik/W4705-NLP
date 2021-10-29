@@ -163,6 +163,12 @@ class CkyParser(object):
                                         table[(i, j)][m[0]] = ((p, i, k), (q, k, j))
                                         probs[(i, j)][m[0]] = tmpp
 
+        # testing
+        # if self.grammar.startsymbol in table[(0, n)].keys():
+        #     print("True, probability is %f." % probs[(0, n)][self.grammar.startsymbol])
+        # else:
+        #     print("False, probability is none.")
+
         return table, probs
 
 
@@ -185,8 +191,22 @@ if __name__ == "__main__":
     with open('atis3.pcfg','r') as grammar_file:
         grammar = Pcfg(grammar_file) 
         parser = CkyParser(grammar)
-        toks = ['flights', 'from', 'miami', 'to', 'cleveland', '.']
-        print(parser.is_in_language(toks))
-        table, probs = parser.parse_with_backpointers(toks)
-        assert check_table_format(table)
-        assert check_probs_format(probs)
+
+        # test part 2
+        toks1 = ['flights', 'from', 'miami', 'to', 'cleveland', '.']
+        print(','.join(toks1), parser.is_in_language(toks1))
+
+        toks2 = ['miami', 'flights','cleveland', 'from', 'to','.']
+        print(','.join(toks2), parser.is_in_language(toks2))
+
+        # test part 3
+        table1, probs1 = parser.parse_with_backpointers(toks1)
+        table2, probs2 = parser.parse_with_backpointers(toks2)
+
+        assert check_table_format(table1)
+        assert check_probs_format(probs1)
+        assert check_table_format(table2)
+        assert check_probs_format(probs2)
+
+        # test part 4
+        print(get_tree(table1, 0, len(toks1), grammar.startsymbol))
