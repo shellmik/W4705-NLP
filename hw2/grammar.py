@@ -50,8 +50,13 @@ class Pcfg(object):
 
         for rules in list(self.lhs_to_rules.values()):
             list_p = []
+            # check CNF
             for r in rules:
-                # check CNF
+                # check if lhs of the rule is non-terminal
+                if r[0].isupper() is False:
+                    return False
+
+                # check if rhs of the rule is 1 terminal or 2 non-terminal
                 leaves = r[1]
                 if len(leaves) == 1:
                     if leaves[0] == '0' or leaves[0] == '.':
