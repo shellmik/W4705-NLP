@@ -5,7 +5,7 @@ from collections import defaultdict
 import numpy as np
 
 from conll_reader import conll_reader
-
+from tensorflow import keras
 
 class State(object):
     def __init__(self, sentence=[]):
@@ -122,7 +122,7 @@ class FeatureExtractor(object):
 
     def get_input_representation(self, words, pos, state):
         # TODO: Write this method for Part 2
-        result = np.array([])
+        feature = np.array([])
         stack = state.stack
         buffer = state.buffer
         for arr in [stack, buffer]:
@@ -138,26 +138,16 @@ class FeatureExtractor(object):
                         word = '<%s>' % pos_tag
                     elif word not in self.word_vocab:
                         word = '<UNK>'
-                result = np.append(result, [self.word_vocab[word]])
+                feature = np.append(feature, [self.word_vocab[word]])
 
-        return result
+        return feature
 
     def get_output_representation(self, output_pair):
         # TODO: Write this method for Part 2
-        n = len(dep_relations)
-        one_hot = np.zeros(n * 2 + 1)
-        transition = output_pair[0]
-        label = output_pair[1]
-
-        if transition == "shift":
-            one_hot[90] = 1
-        elif transition == "left_arc":
-            one_hot[dep_relations.index(label)] = 1
-        elif transition == "right_arc":
-            one_hot[dep_relations.index(label) + n] = 1
+        one_hot = np.zeros(91)
+        one_hot[self.output_labels[output_pair]] = 1
 
         return one_hot
-
 
 def get_training_matrices(extractor, in_file):
     inputs = []

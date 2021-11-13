@@ -21,14 +21,33 @@ class Parser(object):
         state = State(range(1,len(words)))
         state.stack.append(0)    
 
-        while state.buffer: 
-            pass
-            # TODO: Write the body of this loop for part 4 
+        while state.buffer:
+            # TODO: Write the body of this loop for part 4
+            features = np.array([self.extractor.get_input_representation(words, pos, state)])
+            output = self.model.predict_on_batch(features)[0]
+
+            n = len(output)
+            dict_output = {i: output[i] for i in range(n) if output[i] > 0}
+            dict_output = {k: v for k, v in sorted(dict_output.items(), key=lambda item: -item[1])}
+            for k, v in dict_output.items():
+                output_label = self.output_labels[k]
+                if output_label[0] == "shift":
+                    if len(state.buffer) > 1 or len(state.stack) == 0:
+                        state.shift()
+                        break
+                elif output_label[0] == "left_arc":
+                    if len(state.stack) > 0 and state.stack[-1] != 0:
+                        state.left_arc(output_label[1])
+                        break
+                elif output_label[0] == "right_arc":
+                    if len(state.stack) > 0:
+                        state.right_arc(output_label[1])
+                        break
 
         result = DependencyStructure()
         for p,c,r in state.deps: 
             result.add_deprel(DependencyEdge(c,words[c],pos[c],p, r))
-        return result 
+        return result
         
 
 if __name__ == "__main__":
@@ -53,4 +72,3 @@ if __name__ == "__main__":
             deps = parser.parse_sentence(words, pos)
             print(deps.print_conll())
             print()
-        
